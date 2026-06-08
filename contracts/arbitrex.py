@@ -8,6 +8,7 @@
 # ╚══════════════════════════════════════════════════════════════════════════╝
 
 from genlayer import *
+from dataclasses import dataclass
 import json
 
 # ── CONSTANTS ──────────────────────────────────────────────────────────────
@@ -291,7 +292,7 @@ class ArbitrEx(gl.Contract):
 
         self.jobs[job_id] = Job(
             client=client,
-            freelancer=Address.ZERO,
+            freelancer=Address("0x0000000000000000000000000000000000000000"),
             title=title,
             requirements=requirements,
             category=cat,
@@ -300,7 +301,7 @@ class ArbitrEx(gl.Contract):
             status="OPEN",
             work_url="",
             work_desc="",
-            milestones=DynArray[Milestone](),
+            milestones=[],
             assessment=assessment
         )
 
