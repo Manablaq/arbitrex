@@ -207,28 +207,15 @@ class ArbitrEx(gl.Contract):
         # Append GEN to budget if not already there
         budget_display = budget if "GEN" in budget.upper() else budget + " GEN"
 
-        prompt = f"""You are an expert project evaluator on a freelance platform.
-Assess whether this job is realistic and achievable.
-
-Job Title: {title}
-Job Description: {description}
+        prompt = f"""Evaluate this freelance job.
+Title: {title}
+Description: {description}
 Budget: {budget_display}
 Category: {category}
 
-Payment range on this platform: {MIN_PAYMENT_GEN} GEN minimum to {MAX_PAYMENT_GEN} GEN maximum.
-
-Evaluate:
-1. Is this task technically feasible?
-2. Is the budget reasonable for the scope described?
-3. Is the description clear enough to complete?
-
-Respond ONLY with a JSON object in this exact format:
-{{
-  "feasible": true or false,
-  "feasibility_score": <integer 0-100>,
-  "reasoning": "<one sentence>",
-  "recommendation": "PROCEED" or "REVIEW" or "REJECT"
-}}"""
+Is it feasible and clearly scoped?
+Respond ONLY with JSON:
+{{"feasible": true or false, "feasibility_score": <0-100>, "reasoning": "<one sentence>", "recommendation": "PROCEED" or "REVIEW" or "REJECT"}}"""
 
         def leader_fn():
             result = gl.nondet.exec_prompt(prompt, response_format="json")
@@ -410,23 +397,14 @@ Respond ONLY with a JSON object in this exact format:
         if job.status not in [JOB_SUBMITTED, JOB_ACCEPTED]:
             raise Exception("Mediation requires ACCEPTED or SUBMITTED status")
 
-        prompt = f"""You are a neutral AI mediator for a freelance dispute.
-
-Job Title: {job.title}
-Job Description: {job.description}
-Budget: {job.budget_display}
-Work Submitted: {job.work_submission if job.work_submission else "Not yet submitted"}
-Requesting Party Position: {your_position}
+        prompt = f"""Mediate this freelance dispute.
+Job: {job.title} | Budget: {job.budget_display}
+Work submitted: {job.work_submission if job.work_submission else "None"}
+Party position: {your_position}
 
 Suggest a fair compromise.
-
 Respond ONLY with JSON:
-{{
-  "compromise_suggestion": "<clear actionable compromise>",
-  "recommended_split": "<percentage to worker, e.g. 75%>",
-  "confidence": <integer 0-100>,
-  "key_issues": "<main sticking points>"
-}}"""
+{{"compromise_suggestion": "<compromise>", "recommended_split": "<% to worker>", "confidence": <0-100>, "key_issues": "<issues>"}}"""
 
         def leader_fn():
             result = gl.nondet.exec_prompt(prompt, response_format="json")
@@ -478,29 +456,16 @@ Respond ONLY with JSON:
             if p.get("type") == "dispute":
                 precedent_str += f"- {job.category}: {p.get('verdict_pct','?')}% to worker.\n"
 
-        prompt = f"""You are an impartial AI judge in the Court of the Internet for freelance disputes.
+        prompt = f"""Judge this freelance dispute. Verdict = % of budget worker deserves.
+Job: {job.title} | Budget: {job.budget_display}
+Work: {job.work_submission if job.work_submission else "None"}
+Client evidence: {client_evidence if client_evidence else "None"}
+Worker evidence: {worker_evidence if worker_evidence else "None"}
+Prior cases: {precedent_str if precedent_str else "None"}
 
-Job Title: {job.title}
-Job Description: {job.description}
-Budget: {job.budget_display}
-Work Submitted: {job.work_submission if job.work_submission else "No submission yet"}
-Mediation Attempted: {job.mediation_suggestion if job.mediation_suggestion else "None"}
-
-Client Evidence: {client_evidence if client_evidence else "Not provided"}
-Worker Evidence: {worker_evidence if worker_evidence else "Not provided"}
-
-Prior Cases: {precedent_str if precedent_str else "None"}
-
-Issue a graduated verdict: what percentage of the budget does the WORKER deserve?
-Valid verdicts: 0, 25, 50, 75, or 100.
-
+Valid verdicts: 0, 25, 50, 75, 100 (% to worker).
 Respond ONLY with JSON:
-{{
-  "verdict_pct": <0, 25, 50, 75, or 100>,
-  "reasoning": "<2-3 sentence explanation>",
-  "key_finding": "<one sentence summary>",
-  "confidence": <integer 0-100>
-}}"""
+{{"verdict_pct": <0|25|50|75|100>, "reasoning": "<2-3 sentences>", "key_finding": "<1 sentence>", "confidence": <0-100>}}"""
 
         def leader_fn():
             result = gl.nondet.exec_prompt(prompt, response_format="json")
@@ -598,25 +563,16 @@ Respond ONLY with JSON:
         if caller != job.client and caller != job.worker:
             raise Exception("Only job parties can appeal")
 
-        prompt = f"""You are a senior AI judge in the Court of Appeals for freelance disputes.
-Stricter standard — original verdict overturned only on significant error or new evidence.
+        prompt = f"""Review this freelance dispute appeal. Strict standard — overturn only on clear error or new evidence.
+Job: {job.title} | Budget: {job.budget_display}
+Original verdict: {dispute.verdict_pct}% to worker | Reasoning: {dispute.verdict_reasoning}
+Appeal grounds: {appeal_grounds}
+Client evidence: {dispute.client_evidence if dispute.client_evidence else "None"}
+Worker evidence: {dispute.worker_evidence if dispute.worker_evidence else "None"}
 
-Job Title: {job.title}
-Budget: {job.budget_display}
-Work Submitted: {job.work_submission if job.work_submission else "None"}
-Original Verdict: {dispute.verdict_pct}% to worker
-Original Reasoning: {dispute.verdict_reasoning}
-Appeal Grounds: {appeal_grounds}
-Client Evidence: {dispute.client_evidence if dispute.client_evidence else "None"}
-Worker Evidence: {dispute.worker_evidence if dispute.worker_evidence else "None"}
-
+Valid verdicts: 0, 25, 50, 75, 100.
 Respond ONLY with JSON:
-{{
-  "appeal_verdict_pct": <0, 25, 50, 75, or 100>,
-  "upheld_original": true or false,
-  "reasoning": "<2-3 sentence explanation>",
-  "verdict_change": "<Upheld / Partially Modified / Overturned>"
-}}"""
+{{"appeal_verdict_pct": <0|25|50|75|100>, "upheld_original": true or false, "reasoning": "<2-3 sentences>", "verdict_change": "Upheld or Partially Modified or Overturned"}}"""
 
         def leader_fn():
             result = gl.nondet.exec_prompt(prompt, response_format="json")
@@ -667,22 +623,14 @@ Respond ONLY with JSON:
         if completed >= total:
             raise Exception("All milestones already completed")
 
-        prompt = f"""You are a technical milestone verifier for a freelance project.
+        prompt = f"""Verify this freelance milestone.
+Job: {job.title} | Milestone {completed+1} of {total}
+Milestone: {milestone_description}
+Proof: {proof_of_completion}
 
-Job Title: {job.title}
-Description: {job.description}
-Total Milestones: {total}
-Completed So Far: {completed}
-Milestone Being Verified: {milestone_description}
-Proof Provided: {proof_of_completion}
-
+Was this milestone genuinely completed?
 Respond ONLY with JSON:
-{{
-  "milestone_met": true or false,
-  "confidence": <integer 0-100>,
-  "feedback": "<specific feedback>",
-  "next_steps": "<what should happen next>"
-}}"""
+{{"milestone_met": true or false, "confidence": <0-100>, "feedback": "<feedback>", "next_steps": "<next steps>"}}"""
 
         def leader_fn():
             result = gl.nondet.exec_prompt(prompt, response_format="json")
