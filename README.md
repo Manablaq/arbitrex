@@ -16,15 +16,15 @@ GenLayer is especially relevant here because validators can fetch external publi
 
 ## Current Bradbury Deployment
 
-The hardened submission-evidence contract is ready for redeployment. These fields should be updated after the next Bradbury deployment:
+The hardened submission-evidence contract is deployed on GenLayer Bradbury Testnet.
 
 ## Key Contract Address
 
-`<TO_BE_UPDATED_AFTER_REDEPLOY>`
+`0x02feE3a2a62A3DcC889f66B819d14d4b45B7c794`
 
 ## Deployment Transaction Hash
 
-`<TO_BE_UPDATED_AFTER_REDEPLOY>`
+`0x52df6935be2b08455ea3bd7b258827ff0c1ddaeb6a3fd6a7cee2e2dbf1e46423`
 
 ## Network Details
 
@@ -33,7 +33,7 @@ The hardened submission-evidence contract is ready for redeployment. These field
 | Network | GenLayer Bradbury Testnet |
 | Chain ID | `4221` |
 | RPC URL | `https://rpc-bradbury.genlayer.com` |
-| Contract | `<TO_BE_UPDATED_AFTER_REDEPLOY>` |
+| Contract | `0x02feE3a2a62A3DcC889f66B819d14d4b45B7c794` |
 
 ## Core Workflow
 

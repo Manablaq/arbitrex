@@ -68,5 +68,5 @@ Users interact with the contract through wallet-connected actions:
 The frontend contract address is configured as:
 
 ```text
-<TO_BE_UPDATED_AFTER_REDEPLOY>
+0x02feE3a2a62A3DcC889f66B819d14d4b45B7c794
 ```
