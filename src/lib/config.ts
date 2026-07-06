@@ -1,4 +1,4 @@
-export const CONTRACT_ADDRESS = '0x9B42EEcE1240C2dd1B5964295db03964CB84C77b' as `0x${string}`
+export const CONTRACT_ADDRESS = '0xD84410587033A8553d4e26e6Cf0cb4187B10cCeA' as `0x${string}`
 
 export const BRADBURY_CHAIN = {
   id: 4221,
