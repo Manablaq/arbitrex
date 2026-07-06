@@ -42,6 +42,7 @@ class Job:
     feasibility: str
     feasibility_score: str
     work_submission: str
+    fetched_content: str
     submission_description: str
     ai_score: str
     ai_score_reasoning: str
@@ -157,6 +158,7 @@ class ArbitrEx(gl.Contract):
             feasibility=str(d.get("feasibility", "")),
             feasibility_score=str(d.get("feasibility_score", "0")),
             work_submission=str(d.get("work_submission", "")),
+            fetched_content=str(d.get("fetched_content", "")),
             submission_description=str(d.get("submission_description", "")),
             ai_score=str(d.get("ai_score", "")),
             ai_score_reasoning=str(d.get("ai_score_reasoning", "")),
@@ -180,6 +182,7 @@ class ArbitrEx(gl.Contract):
             "feasibility": job.feasibility,
             "feasibility_score": job.feasibility_score,
             "work_submission": job.work_submission,
+            "fetched_content": job.fetched_content,
             "submission_description": job.submission_description,
             "ai_score": job.ai_score,
             "ai_score_reasoning": job.ai_score_reasoning,
@@ -359,14 +362,34 @@ Respond ONLY with JSON:
             if p.get("type") == "scoring":
                 precedent_str += f"- Score {p.get('score','?')}/100: {p.get('summary','')}\n"
 
-        prompt = f"""Score this freelance work for payment release.
+        requirements = job.requirements
+
+        # ── NONDET BLOCK — actually FETCH the submission URL content ───────────
+        def _fetch_and_score() -> str:
+            fetched_content = ""
+            fetch_status = "OK"
+            try:
+                response = gl.nondet.web.get(submission_link)
+                if response.status_code >= 400:
+                    fetch_status = f"HTTP {response.status_code}"
+                    fetched_content = "[Could not fetch content — URL returned an error]"
+                else:
+                    fetched_content = response.body.decode("utf-8", errors="ignore")[:6000]
+            except Exception:
+                fetch_status = "FETCH_ERROR"
+                fetched_content = "[Could not fetch content — URL unreachable or invalid]"
+
+            prompt = f"""Score this freelance work for payment release.
 
 JOB REQUIREMENTS:
-{job.requirements}
+{requirements}
 
-SUBMITTED WORK:
-Link: {submission_link}
-Worker explanation: {submission_description}
+SUBMISSION URL: {submission_link}
+FETCH STATUS: {fetch_status}
+WORKER EXPLANATION: {submission_description}
+
+FETCHED CONTENT FROM SUBMISSION URL:
+{fetched_content}
 
 SCORING (100 pts):
 - All requirements addressed (40 pts)
@@ -374,27 +397,40 @@ SCORING (100 pts):
 - Complete, no major gaps (20 pts)
 - Clearly delivered and accessible (10 pts)
 
+If FETCH STATUS is not OK or fetched content is empty/unreadable, score conservatively low (0-30)
+and note the fetch failure in your reasoning — do not guess about content you cannot see.
+
 Payment: 85-100=100% | 60-84=75% | 40-59=50% | 20-39=25% | 0-19=0%
 Prior cases: {precedent_str if precedent_str else "None"}
 
 Respond ONLY with JSON:
-{{"score": <0-100>, "reasoning": "<3-4 sentences>", "requirements_met": "<which met>", "gaps": "<what missing>"}}"""
+{{"score": <0-100>, "reasoning": "<3-4 sentences>", "requirements_met": "<which met>", "gaps": "<what missing>", "fetched_content": "<first 300 chars of fetched content, or empty if fetch failed>"}}"""
 
-        def leader_fn():
-            return json.dumps(gl.nondet.exec_prompt(prompt, response_format="json"), sort_keys=True)
+            result = gl.nondet.exec_prompt(prompt, response_format="json")
+            return json.dumps(result, sort_keys=True)
 
-        def validator_fn(leaders_res) -> bool:
-            if not isinstance(leaders_res, gl.vm.Return): return False
-            try:
-                ld = json.loads(leaders_res.calldata)
-                md = json.loads(leader_fn())
-                ls = int(ld.get("score", -1))
-                if not (0 <= ls <= 100): return False
-                return abs(ls - int(md.get("score", -2))) <= 15
-            except Exception: return False
+        result_raw = gl.eq_principle.prompt_non_comparative(
+            _fetch_and_score,
+            task=(
+                "Fetch the content at the submission URL, then score the freelance "
+                "work against the job requirements based on the ACTUAL fetched content, "
+                "not assumptions about what the URL might contain."
+            ),
+            criteria=(
+                "Validate format only. Accept if ALL of these are true: "
+                "(1) valid JSON object, "
+                "(2) 'score' field is an integer between 0 and 100, "
+                "(3) 'reasoning' field is a non-empty string, "
+                "(4) 'requirements_met' field is present, "
+                "(5) 'gaps' field is present. "
+                "Do not evaluate whether the score itself is correct — format check only."
+            ),
+        )
+        # ── END NONDET ─────────────────────────────────────────────────────────
 
-        ai = json.loads(gl.vm.run_nondet_unsafe(leader_fn, validator_fn))
-        score = int(ai.get("score", 50))
+        ai = json.loads(result_raw)
+        job.fetched_content = str(ai.get("fetched_content", ""))[:500]
+        score = int(ai.get("score", 0))
         reasoning = str(ai.get("reasoning", ""))
         requirements_met = str(ai.get("requirements_met", ""))
         gaps = str(ai.get("gaps", ""))
@@ -549,7 +585,9 @@ Respond ONLY with JSON:
         prompt = f"""Mediate this freelance dispute.
 Job: {job.title} | Budget: {job.budget}
 Requirements: {job.requirements}
-Work: {job.work_submission} | Worker explanation: {job.submission_description}
+Work URL: {job.work_submission}
+Fetched Content: {job.fetched_content if job.fetched_content else "[No content available]"}
+Worker explanation: {job.submission_description}
 AI Score: {job.ai_score}/100 | Reasoning: {job.ai_score_reasoning}
 Party position: {your_position}
 Respond ONLY with JSON:
@@ -596,7 +634,9 @@ Respond ONLY with JSON:
         prompt = f"""Review this freelance dispute. Original AI score contested.
 Job: {job.title} | Budget: {job.budget}
 Requirements: {job.requirements}
-Work: {job.work_submission} | Worker: {job.submission_description}
+Work URL: {job.work_submission}
+Fetched Content: {job.fetched_content if job.fetched_content else "[No content available]"}
+Worker: {job.submission_description}
 Original score: {job.ai_score}/100 | Reasoning: {job.ai_score_reasoning}
 Dispute grounds: {grounds}
 Prior cases: {precedent_str if precedent_str else "None"}
@@ -685,7 +725,9 @@ Respond ONLY with JSON:
         prompt = f"""Review this appeal. Strict standard — overturn only on clear error or new evidence.
 Job: {job.title} | Budget: {job.budget}
 Requirements: {job.requirements}
-Work: {job.work_submission} | Worker: {job.submission_description}
+Work URL: {job.work_submission}
+Fetched Content: {job.fetched_content if job.fetched_content else "[No content available]"}
+Worker: {job.submission_description}
 Original AI score: {job.ai_score}/100
 Dispute verdict: {dispute.verdict_pct}% to worker | Reasoning: {dispute.verdict_reasoning}
 Appeal grounds: {appeal_grounds}
