@@ -1,6 +1,6 @@
 # ArbitrEx
 
-ArbitrEx is a GenLayer Bradbury testnet prototype for AI-assisted freelance work validation, payment scoring, mediation, and dispute resolution.
+ArbitrEx is a Bradbury testnet prototype for AI-assisted freelance work validation, payment scoring, mediation, and dispute resolution on GenLayer.
 
 ## What Problem ArbitrEx Solves
 
@@ -10,21 +10,21 @@ The project is intended as a review-ready Bradbury deployment, not a production 
 
 ## Why GenLayer Is Used
 
-ArbitrEx uses GenLayer because the contract needs AI-assisted judgment while still preserving deterministic agreement across validators. The contract combines normal on-chain state transitions with GenLayer nondeterministic execution for tasks such as feasibility review, submission scoring, mediation, dispute review, appeals, and milestone checks.
+ArbitrEx uses GenLayer because the contract needs AI-assisted judgment while still preserving deterministic agreement across validators. The contract combines normal on-chain state transitions with GenLayer nondeterministic execution for tasks such as feasibility review, submission scoring, mediation, dispute review, and appeals.
 
-GenLayer is especially relevant here because validators can fetch external public content through `gl.nondet.web.get`, score it with an LLM, and return structured JSON that is checked before contract state changes.
+GenLayer is especially relevant here because validators can fetch external public content through `gl.nondet.web.get`, fall back to rendered text for JavaScript-heavy pages with `gl.nondet.web.render`, score the retrieved evidence with an LLM, and return structured JSON that is checked before contract state changes.
 
-## Current Deployment
+## Current Bradbury Deployment
 
-This repository documents the current Bradbury testnet deployment of the URL-fetching fix.
+The hardened submission-evidence contract is ready for redeployment. These fields should be updated after the next Bradbury deployment:
 
 ## Key Contract Address
 
-`0xD84410587033A8553d4e26e6Cf0cb4187B10cCeA`
+`<TO_BE_UPDATED_AFTER_REDEPLOY>`
 
 ## Deployment Transaction Hash
 
-`0xa1d02512bc80f1785a1c2160b31eefeac6764b2d714c8c1f271d3fc91f964bd9`
+`<TO_BE_UPDATED_AFTER_REDEPLOY>`
 
 ## Network Details
 
@@ -33,7 +33,7 @@ This repository documents the current Bradbury testnet deployment of the URL-fet
 | Network | GenLayer Bradbury Testnet |
 | Chain ID | `4221` |
 | RPC URL | `https://rpc-bradbury.genlayer.com` |
-| Contract | `0xD84410587033A8553d4e26e6Cf0cb4187B10cCeA` |
+| Contract | `<TO_BE_UPDATED_AFTER_REDEPLOY>` |
 
 ## Core Workflow
 
@@ -42,10 +42,11 @@ This repository documents the current Bradbury testnet deployment of the URL-fet
 3. A worker accepts the job.
 4. The worker submits a public URL plus a description of the delivered work.
 5. The contract fetches the submitted URL content with `gl.nondet.web.get`.
-6. The fetched content is included in the scoring prompt before payment is calculated.
-7. The client can submit payment proof, request mediation, or file a dispute.
-8. The worker can confirm payment receipt or flag payment default after the payment window.
-9. Disputes and appeals produce structured verdicts and update case law and reputation.
+6. If the fetched content is an HTTP error, empty, too short, or looks like a JavaScript application shell, the contract falls back to `gl.nondet.web.render(..., mode="text", wait_after_loaded="5s")`.
+7. The fetched content, fetch status, and fetch method are included in the scoring prompt before payment is calculated.
+8. The client can submit payment proof, request mediation, or file a dispute.
+9. The worker can confirm payment receipt or flag payment default after the payment window.
+10. Disputes and appeals produce structured verdicts and update case law and reputation.
 
 ## Architecture
 
@@ -72,7 +73,9 @@ AI outputs are expected as structured JSON and are validated before being used f
 
 The original scoring flow gave validators a prompt containing only the submitted link. That was insufficient because validator LLMs should not be expected to browse a URL simply because it appears inside prompt text.
 
-The fix in commit `de45b2e` changes `submit_work` so the contract fetches the submitted URL using `gl.nondet.web.get` inside the nondeterministic block before scoring. The prompt now includes a `FETCHED CONTENT FROM SUBMISSION URL` section, and scoring instructions require conservative scoring if the content cannot be fetched.
+The fix in commit `de45b2e` changed `submit_work` so the contract fetches the submitted URL using `gl.nondet.web.get` inside the nondeterministic block before scoring. The hardened version adds a rendered-text fallback for weak or JavaScript-heavy responses. The prompt now includes `FETCHED CONTENT FROM SUBMISSION URL`, `FETCH STATUS`, and `FETCH METHOD`, and scoring instructions require conservative scoring if usable content cannot be fetched.
+
+The scoring prompt also treats fetched content as untrusted worker evidence. It explicitly tells the evaluator not to follow instructions found inside the submission and to score only whether the evidence satisfies the job requirements.
 
 Later dispute flows also include `job.fetched_content`, so mediation, disputes, and appeals are based on the saved fetched-content summary rather than the URL alone.
 

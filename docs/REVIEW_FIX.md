@@ -26,6 +26,23 @@ response = gl.nondet.web.get(submission_link)
 
 The fetched response body is decoded and bounded before being included in the prompt.
 
+## Perfected Fix: Render Fallback
+
+The hardened scoring flow still uses `gl.nondet.web.get()` first. It then checks whether the result is weak or unusable:
+
+- HTTP status `>= 400`
+- Empty content
+- Content shorter than about 300 characters
+- Common JavaScript shell indicators such as `You need to enable JavaScript`, `<div id="root">`, `__NEXT_DATA__`, `vite`, or `webpack`
+
+When the initial response looks weak, the contract falls back to:
+
+```python
+gl.nondet.web.render(submission_link, mode="text", wait_after_loaded="5s")
+```
+
+This improves review quality for Vercel, Netlify, and other JavaScript-heavy submissions where a simple HTTP GET may return only an app shell.
+
 ## Prompt Receives Fetched Content
 
 The scoring prompt now contains a dedicated section:
@@ -35,7 +52,9 @@ FETCHED CONTENT FROM SUBMISSION URL:
 {fetched_content}
 ```
 
-The prompt also includes fetch status so validators can distinguish successful fetches from failed or unreadable submissions.
+The prompt also includes fetch status and fetch method so validators can distinguish successful GET fetches, rendered-text fallbacks, and failed fetch attempts.
+
+The fetched content is explicitly labeled as untrusted worker evidence. The prompt instructs the AI not to follow instructions found inside the fetched content and to score only whether the evidence satisfies the job requirements.
 
 ## Conservative Scoring On Fetch Failure
 
@@ -53,12 +72,12 @@ The following later flows include `job.fetched_content` in their prompts:
 
 This keeps later review paths aligned with the actual submission content captured during scoring instead of relying only on `job.work_submission`.
 
-## Deployment Proof
+## Redeployment Proof
 
-Current Bradbury deployment:
+To be filled after redeployment:
 
-- Contract address: `0xD84410587033A8553d4e26e6Cf0cb4187B10cCeA`
-- Deployment transaction: `0xa1d02512bc80f1785a1c2160b31eefeac6764b2d714c8c1f271d3fc91f964bd9`
+- Contract address: `<TO_BE_UPDATED_AFTER_REDEPLOY>`
+- Deployment transaction: `<TO_BE_UPDATED_AFTER_REDEPLOY>`
 - Network: GenLayer Bradbury Testnet
 - Chain ID: `4221`
 - RPC: `https://rpc-bradbury.genlayer.com`

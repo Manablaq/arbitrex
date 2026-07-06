@@ -48,12 +48,12 @@ This creates lightweight on-chain continuity: similar future disputes can see su
 AI-assisted flows are used for:
 
 - Feasibility and clarity assessment in `create_job`.
-- URL fetch and work scoring in `submit_work`.
+- URL fetch, rendered-text fallback, and work scoring in `submit_work`.
 - Mediation suggestions in `request_mediation`.
 - Formal dispute verdicts in `file_dispute`.
 - Appeal review in `appeal_verdict`.
 
-For submission scoring, `submit_work` fetches the submitted URL using `gl.nondet.web.get` before prompting the LLM. The LLM receives fetched content, fetch status, requirements, worker explanation, prior cases, and scoring rules.
+For submission scoring, `submit_work` fetches the submitted URL using `gl.nondet.web.get` before prompting the LLM. If the response is an HTTP error, empty, too short, or looks like a JavaScript application shell, the contract falls back to `gl.nondet.web.render` in text mode. The LLM receives fetched content, fetch status, fetch method, requirements, worker explanation, prior cases, and scoring rules.
 
 ## Frontend-To-Contract Interaction
 
@@ -68,5 +68,5 @@ Users interact with the contract through wallet-connected actions:
 The frontend contract address is configured as:
 
 ```text
-0xD84410587033A8553d4e26e6Cf0cb4187B10cCeA
+<TO_BE_UPDATED_AFTER_REDEPLOY>
 ```

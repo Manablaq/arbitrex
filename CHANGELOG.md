@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.2
+
+- Hardened submission evidence fetching with rendered-text fallback for weak or JavaScript-heavy pages.
+- Added fetch status and fetch method metadata to AI scoring.
+- Added prompt-injection protection for untrusted fetched worker evidence.
+- Updated review documentation for the redeploy-ready Bradbury contract.
+
 ## v0.1.1
 
 - Fixed submission scoring so `submit_work` fetches the submitted URL content before AI scoring.

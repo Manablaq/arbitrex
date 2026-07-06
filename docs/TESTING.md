@@ -8,7 +8,7 @@ Use the GenLayer Bradbury Testnet:
 
 - RPC: `https://rpc-bradbury.genlayer.com`
 - Chain ID: `4221`
-- Contract: `0xD84410587033A8553d4e26e6Cf0cb4187B10cCeA`
+- Contract: `<TO_BE_UPDATED_AFTER_REDEPLOY>`
 
 Start the frontend locally:
 
@@ -47,9 +47,18 @@ Expected result: the job worker becomes the connected worker address and the sta
 
 Expected result: `submit_work` fetches the public URL content before scoring and moves the job to scored state.
 
+## `submit_work` Test With A Vercel/Netlify URL
+
+1. Use the worker wallet for an accepted job.
+2. Submit a public Vercel or Netlify URL where a basic HTTP GET may return a JavaScript app shell.
+3. Include a concise description of the delivered work.
+4. Confirm the transaction and wait for scoring.
+
+Expected result: if the initial GET content is weak, `submit_work` falls back to rendered text with `gl.nondet.web.render(..., mode="text", wait_after_loaded="5s")`. The read output should show useful `fetched_content`, and the scoring reasoning should reflect the rendered page content where available.
+
 ## Expected Proof That `fetched_content` Is Used
 
-The deployed contract code stores a bounded excerpt from the fetched submission content in `job.fetched_content`.
+The deployed contract code stores a bounded excerpt from the fetched or rendered submission content in `job.fetched_content`.
 
 To verify behavior:
 
