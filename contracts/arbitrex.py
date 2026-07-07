@@ -302,7 +302,7 @@ Respond ONLY with JSON:
             budget=budget_display, category=category, status=JOB_OPEN,
             feasibility="FEASIBLE" if ai.get("feasible", True) else "INFEASIBLE",
             feasibility_score=str(ai.get("feasibility_score", 70)),
-            work_submission="", submission_description="",
+            work_submission="", fetched_content="", submission_description="",
             ai_score="", ai_score_reasoning="",
             payment_pct="", payment_due="",
             payment_proof="", payment_confirmed="false",
