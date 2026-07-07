@@ -74,8 +74,8 @@ This keeps later review paths aligned with the actual submission content capture
 
 ## Redeployment Proof
 
-- Contract address: `0x02feE3a2a62A3DcC889f66B819d14d4b45B7c794`
-- Deployment transaction: `0x52df6935be2b08455ea3bd7b258827ff0c1ddaeb6a3fd6a7cee2e2dbf1e46423`
+- Contract address: `0x09c460AB5f8A4Dd110e9417de4842Ec469D1092b`
+- Deployment transaction: `0x9804b0c721814dc2703776e3a08ce42ac5d9699f1e3909452fd92bfbb6861571`
 - Network: GenLayer Bradbury Testnet
 - Chain ID: `4221`
 - RPC: `https://rpc-bradbury.genlayer.com`

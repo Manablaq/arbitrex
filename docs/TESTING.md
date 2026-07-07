@@ -8,7 +8,7 @@ Use the GenLayer Bradbury Testnet:
 
 - RPC: `https://rpc-bradbury.genlayer.com`
 - Chain ID: `4221`
-- Contract: `0x02feE3a2a62A3DcC889f66B819d14d4b45B7c794`
+- Contract: `0x09c460AB5f8A4Dd110e9417de4842Ec469D1092b`
 
 Start the frontend locally:
 
